@@ -1,18 +1,4 @@
-﻿/****************************************************************************************************************************************************
-*             This is a Test Driven Development solution to the Vending Machine problem presented on the                                       *
-*                                                                                                                                                   *
-*             url link: https://github.com/guyroyse/vending-machine-kata                                                                            *
-*                                                                                                                                                  *
-*                                                                         Author:      Keith Israel                                                 *
-*                                                                         Location:    Des Moines, IA  USA                                          *
-*                                                                         Year:        April 2016                                                   *
-*                                                                                                                                                   *
-*                                                                                                                   All Rights Reserved.            *
-*                                                                                                                                                   *
-*****************************************************************************************************************************************************/
-
-
-
+﻿
 using System;
 using System.Collections.Generic;
 
@@ -20,36 +6,42 @@ namespace VendingMachineApplication
 {
 
     #region main class
-    class VendingMachine
+    public class VendingMachine
     {
         #region properties
-        static string[] message = { "INSERT COIN", "MACHINE ERROR", "INVALID COIN", "", "SOLD OUT", "EXACT CHANGE!" };
-        static string display = string.Empty;
-        static ISerialComm comm = null;
-        static ISelection selection = null;
-        static ICoin[] coins = null;
-        static IProduct[] products = null;
-        static double inputSum = 0;
+        public string[] message = { "INSERT COIN", "MACHINE ERROR", "INVALID COIN", "", "SOLD OUT", "EXACT CHANGE!" };
+        public string display = string.Empty;
+        public static ISerialComm comm = null;
+        public static ISelection selection = null;
+        public ICoin[] coins = null;
+        public IProduct[] products = null;
+        public double inputSum = 0;
         static string serialPort = "COM1";
-        static Dictionary<string, int> items = new Dictionary<string, int>();
+        public Dictionary<string, int> items = new Dictionary<string, int>();
+        public string productName = string.Empty;
 
         #endregion properties
 
+        public VendingMachine()
+        {
+            this.init();
+        }
+
         static void Main()
         {
-            init();
+            VendingMachine vm = new VendingMachine();
 
             while (true) // Loop indefinitely
             {
-                checkPortComm();
-                Console.WriteLine(checkDisplay());         // getDisplay()   --> check comm error codes
+                vm.checkPortComm();
+                Console.WriteLine(vm.checkDisplay());         // getDisplay()   --> check comm error codes
                 System.Threading.Thread.Sleep(1000);
             }
         }
 
         #region program methods
 
-        static void init()
+        public void init()
         {
             setUpPort();
             setUpCoinTypes();
@@ -57,7 +49,7 @@ namespace VendingMachineApplication
             display = message[0];
         }
 
-        static void setUpProducts()
+        void setUpProducts()
         {
             products = new Product[3];
             products[0] = new Product("cola", 1.00);
@@ -65,7 +57,7 @@ namespace VendingMachineApplication
             products[2] = new Product("candy", 0.65);
         }
 
-        static void setUpCoinTypes()
+        void setUpCoinTypes()
         {
             coins = new Coin[3];
             coins[0] = new Coin("Nickel", 21.21, 1.95, 5.00, null);
@@ -79,7 +71,7 @@ namespace VendingMachineApplication
         /*
 			set up a port that for serial communication
 		*/
-        static void setUpPort()
+        void setUpPort()
         {
             comm = new SerialComm(serialPort);
         }
@@ -87,7 +79,7 @@ namespace VendingMachineApplication
         /*
 			communicate with one port
 		*/
-        static void checkPortComm()
+        void checkPortComm()
         {
             //if there's data coming in from the serial port
             if (comm.DataSignal)
@@ -96,20 +88,19 @@ namespace VendingMachineApplication
                 if (comm.Signal == (int)SerialComm.SignalType.coinSignal)
                 {
                     ICoin inputCoin = new Coin((String.Format("inserted coin at: {0}", DateTime.Now)),
-                        double.Parse(comm.Data.Substring(1, 4)), double.Parse(comm.Data.Substring(7, 4)), 
-                        double.Parse(comm.Data.Substring(13, 4)), coins);    
+                        double.Parse(comm.Data.Substring(7, 4)), double.Parse(comm.Data.Substring(13, 4)), 
+                        double.Parse(comm.Data.Substring(19, 4)), coins);    
 
 
                     if (inputCoin.IsGenuine)
                     {
                         comm.Data = string.Empty;
                         comm.DataSignal = false;
-                        inputSum += inputCoin.Value;
-                        display = inputCoin.Value.ToString();
+                        incrementSum(inputCoin);
+                        changeDisplay(inputSum.ToString());
                     }
                     else
                     {
-                        display = message[2];
                         rejectCoin(inputCoin);
                         return;
                     }
@@ -118,7 +109,7 @@ namespace VendingMachineApplication
                 else if (comm.Signal == (int)SerialComm.SignalType.itemSignal)
                 {
                     string inData = comm.Data;
-                    string productName = inData.Substring(8, (comm.Data.IndexOf('>') - 1));
+                    productName = inData.Substring(12, (comm.Data.IndexOf('>') - 1));
 
                     if (items.Count > 0)
                     {
@@ -151,7 +142,7 @@ namespace VendingMachineApplication
                             selection = new Selection(product, inputSum);
                             selection.getBalance();
                             display = selection.Display;
-                            items[product.Name]--;      //reduce the amount of products of that kind by one
+                            decrementInventory(product);
 
                             /*
 								1. if coinSum is less than product price; display coin sum
@@ -170,21 +161,17 @@ namespace VendingMachineApplication
                     }
                 }
                 //if the data is a return-coins selection
-                else if (comm.Signal == (int)SerialComm.SignalType.selectionReturnSignal)
+                else if (comm.Signal == (int)SerialComm.SignalType.coinReturnSignal)
                 {
                     selection = new Selection(true);
                     comm.returnCoins();
-                    display = message[0];
+                    changeDisplay(message[0]);
                 }
                 //if the data received concernes the coin reserves
                 else if (comm.Signal == (int)SerialComm.SignalType.reservesSignal)
                 {
-                    string reserveLevel = comm.Data.Substring(11, comm.Data.IndexOf('>') - 1);
-
-                    if (reserveLevel.ToLower().Contains("low")) //low reserves for change
-                        comm.Reserves = false;
-                    else
-                        comm.Reserves = true;
+                    string reserveLevel = comm.Data.Substring(17, comm.Data.IndexOf('>') - 1);
+                    ascertainReserves(reserveLevel);
                 }
                 //if faulty data coming in 
                 else
@@ -197,7 +184,32 @@ namespace VendingMachineApplication
                 comm.checkReserves();  //check if we have enough coins for change, else 'EXACT CHANGE' should be displayed'
         }
 
-        static string checkDisplay()
+        public void ascertainReserves(string reserveLevel)
+        {
+            if (reserveLevel.ToLower().Contains("low")) //low reserves for change
+                comm.Reserves = false;
+            else
+                comm.Reserves = true;
+        }
+
+        public void incrementSum(ICoin newCoin)
+        {
+            if(newCoin.IsGenuine)
+                inputSum += newCoin.Value;
+        }
+
+        //reduce the amount of products of that kind by one
+        public void decrementInventory(IProduct product)
+        {
+            items[product.Name]--; 
+        }
+
+        public void changeDisplay(string str)
+        {
+            display = str;
+        }
+
+        public string checkDisplay()
         {
             if (!comm.Status)
             {
@@ -254,8 +266,9 @@ namespace VendingMachineApplication
         /*
 			reject inserted invalidcoin 
 		*/
-        static void rejectCoin(ICoin coin)
+        public void rejectCoin(ICoin coin)
         {
+            changeDisplay(message[2]);
             comm.ejectCoin(coin);
         }    
 

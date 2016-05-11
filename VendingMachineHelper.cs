@@ -13,8 +13,13 @@ namespace VendingMachineApplication
         int Signal { get; set; }
         string Data { get; set; }
         bool Reserves { get; set; }
+        bool CheckReserves { get; set; }
         bool Status { get; set; }
         int ErrorCode { get; set; }
+        bool CoinEjected { get; set; }
+        bool AllCoinsEjected { get; set; }
+        bool ProductEjected { get; set; }
+        bool BalanceEjected { get; set; }
 
         void OpenMyPort();
         void serialPortReceivedInput(object sender, SerialDataReceivedEventArgs e);
@@ -34,10 +39,14 @@ namespace VendingMachineApplication
         private static SerialPort myPort = null;
         private bool serialOpen = false;
         private string commPort, exception = string.Empty;
-        int errorCode = -1;
-        protected bool receivedData = false, lowReserves = false;
+        protected int errorCode = -1;
+        protected bool receivedData = false, reserves = false, chkReserves = false;
         protected string inData = string.Empty;
-        protected int signalType;
+        protected int signalType = -1;
+        protected bool coinEjected = false;
+        protected bool allCoinsEjected = false;
+        protected bool productEjected = false;
+        protected bool balanceEjected = false;
 
         public enum ErrorCodes
         {
@@ -51,7 +60,7 @@ namespace VendingMachineApplication
             coinSignal,
             itemSignal,
             selectionSignal,
-            selectionReturnSignal,
+            coinReturnSignal,
             reservesSignal,
             error
         };
@@ -139,11 +148,67 @@ namespace VendingMachineApplication
         {
             get
             {
-                return this.lowReserves;
+                return this.reserves;
             }
             set
             {
-                this.lowReserves = value;
+                this.reserves = value;
+            }
+        }
+        public bool CheckReserves
+        {
+            get
+            {
+                return this.chkReserves;
+            }
+            set
+            {
+                this.chkReserves = value;
+            }
+        }
+        public bool CoinEjected
+        {
+            get
+            {
+                return this.coinEjected;
+            }
+            set
+            {
+                this.coinEjected = value;
+            }
+        }
+        public bool AllCoinsEjected
+        {
+            get
+            {
+                return this.allCoinsEjected;
+            }
+            set
+            {
+                this.allCoinsEjected = value;
+            }
+        }
+        public bool ProductEjected
+        {
+            get
+            {
+                return this.productEjected;
+            }
+            set
+            {
+                this.productEjected = value;
+            }
+        }
+
+        public bool BalanceEjected
+        {
+            get
+            {
+                return this.balanceEjected;
+            }
+            set
+            {
+                this.balanceEjected = value;
             }
         }
 
@@ -182,37 +247,57 @@ namespace VendingMachineApplication
             inData = sp.ReadExisting();
             receivedData = true;
 
-            if ((inData.ToLower()).Contains("coin"))
-                signalType = (int)SignalType.coinSignal;
-            if ((inData.ToLower()).Contains("item"))
-                signalType = (int)SignalType.itemSignal;
-            else if ((inData.ToLower()).Equals("selection"))
-                signalType = (int)SignalType.selectionSignal;
-            else if ((inData.ToLower()).Equals("selectionReturn"))
-                signalType = (int)SignalType.selectionReturnSignal;
-            else if ((inData.ToLower()).Equals("reserves"))
-                signalType = (int)SignalType.reservesSignal;
+            /*
+             FOR UNIT TEST PURPOSE ONLY. REMOVE AFTER SUCCESSFUL UNIT TEST
+             */
+            inData = (string)sender;
+
+            if (inData.ToLower().Contains("data"))
+            {
+                if ((inData.ToLower()).Contains("coin"))
+                    signalType = (int)SignalType.coinSignal;
+                if ((inData.ToLower()).Contains("item"))
+                    signalType = (int)SignalType.itemSignal;
+                else if ((inData.ToLower()).Equals("selection"))
+                    signalType = (int)SignalType.selectionSignal;
+                else if ((inData.ToLower()).Equals("coinReturn"))
+                    signalType = (int)SignalType.coinReturnSignal;
+                else if ((inData.ToLower()).Equals("reserves"))
+                    signalType = (int)SignalType.reservesSignal;
+                else
+                {
+                    signalType = (int)SignalType.error;
+                    this.errorCode = (int)SerialComm.ErrorCodes.coinError;
+                }
+            }
             else
+            {
                 signalType = (int)SignalType.error;
+                this.errorCode = (int)SerialComm.ErrorCodes.machineError;
+            }
         }
 
         public void ejectCoin(ICoin coin)
         {
             myPort.WriteLine(String.Format("<Eject><{0}><{1}><{2}>", coin.Length, coin.Height, coin.Weight));
+            this.coinEjected = true;
         }
 
 
         public void ejectProduct(IProduct product)
         {
             myPort.WriteLine(String.Format("<Eject><{0}><{1}>", product.Name, product.Price));
+            this.productEjected = true;
         }
         public void returnCoins()
         {
             myPort.WriteLine("<Eject>");
+            this.allCoinsEjected = true;
         }
 
         public void ejectBalance(double productPrice, double insertedSum)
         {
+            this.balanceEjected = false;
             double change = insertedSum - productPrice;
             int noOfQuarters = 0, noOfDimes = 0, noOfNickels = 0;
 
@@ -246,11 +331,13 @@ namespace VendingMachineApplication
                     myPort.WriteLine(String.Format("<Eject><{0}><{1}>", noOfNickels, 0.05));
                 }
             }
+            this.balanceEjected = true;
         }
 
         public void checkReserves()
         {
             myPort.WriteLine("<Reserves>");
+            this.chkReserves = true;
         }
     }
 
@@ -301,9 +388,7 @@ namespace VendingMachineApplication
         bool IsGenuine { get; set; }
         double Length { get; set; }
         double Weight { get; set; }
-        double Height { get; set; }
-
-        void validateCoin(ICoin[] coinTypes);
+        double Height { get; set; }        
     }
 
     // Coin Derived class
@@ -371,17 +456,17 @@ namespace VendingMachineApplication
             }
         }
 
-        public Coin(string type, double length, double height, double weight, ICoin[] coins) : base(length, height)
+        public Coin(string type, double length, double height, double weight, ICoin[] validCoins) : base(length, height)
         {
             this.type = type;
             this.weight = weight;
             this.size = 3.14 * (length / 2) * (length / 2) * height;
 
-            if(coins != null)
-                validateCoin(coins);
+            if(validCoins != null)
+                validateCoin(validCoins);
         }
 
-        public void validateCoin(ICoin[] coinTypes)
+        void validateCoin(ICoin[] coinTypes)
         {
             _isGenuine = false;
 
@@ -467,7 +552,7 @@ namespace VendingMachineApplication
         bool SoldOut { get; set; }
         bool SeenSoldOut { get; set; }
         string Display { get; set; }
-        int Inserted { get; set; }
+        double Inserted { get; set; }
         double Balance { get; set; }
 
         void getBalance();
@@ -477,10 +562,10 @@ namespace VendingMachineApplication
     {
         #region fields
 
-        protected Product product;
-        protected double coinSum;
+        protected IProduct product;
+        //protected double coinSum;
         protected double change;
-        protected int inserted;
+        protected double inserted;
         protected string display = string.Empty;
         protected bool _returnCoins = false, soldOut = false, _checked = false;
 
@@ -493,7 +578,7 @@ namespace VendingMachineApplication
 
         #region accessors
 
-        public Product Product
+        public IProduct Product
         {
             get
             {
@@ -504,7 +589,7 @@ namespace VendingMachineApplication
                 this.product = value;
             }
         }
-        public int Inserted
+        public double Inserted
         {
             get
             {
@@ -578,22 +663,22 @@ namespace VendingMachineApplication
             this._returnCoins = _return;
         }
 
-        public Selection(Product selectedProduct, double sum)
+        public Selection(IProduct selectedProduct, double sum)
         {
             this.product = selectedProduct;
-            this.coinSum = sum;
+            this.inserted = sum;
         }
 
         public void getBalance()
         {
-            if (coinSum < product.Price)
+            if (inserted < product.Price)
             {
                 inserted = (int)Value.Less;
-                display = String.Format("{0}", coinSum);
+                display = String.Format("{0}", inserted);
             }
-            else if (coinSum >= product.Price)
+            else if (inserted >= product.Price)
             {
-                if (coinSum > product.Price)
+                if (inserted > product.Price)
                     inserted = (int)Value.More;
                 else
                     inserted = (int)Value.Equal;
