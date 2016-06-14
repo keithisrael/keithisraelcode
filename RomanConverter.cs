@@ -27,8 +27,26 @@ namespace RomanConverter
             if (inputNumber < 1 || inputNumber > 3999)
                 throw new ArgumentException("Number out of range: 1-3999",
                         new System.Collections.Generic.KeyNotFoundException());
-
-            return romanTable[inputNumber];
+            try
+            {
+                return romanTable[inputNumber];
+            }
+            catch (Exception ex)
+            {
+                String romanValue = String.Empty;
+                int divNo = 0, i = 0;
+                foreach (var keyValue in romanTable)
+                {
+                    if ((inputNumber / keyValue.Key) > 0)
+                        divNo = keyValue.Key;
+                }
+                while (i < inputNumber)
+                {
+                    romanValue += romanTable[divNo];
+                    i++;
+                }
+                return romanValue;
+            }
         }
     }
 }

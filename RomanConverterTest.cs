@@ -14,14 +14,7 @@ namespace RomanConverter.Test
          
          **********************************************************************************************/
 
-
-        [TestMethod]
-        public void TestReturnIWhenpassed1()
-        {
-            string romanValue = rcon.convert(1);
-            Assert.AreEqual("I", romanValue, String.Format("Expected: I \n Returned: {0}", romanValue));
-        }
-
+            
         [TestMethod]
         public void TestReturnVWhenpassed5()
         {
@@ -85,6 +78,31 @@ namespace RomanConverter.Test
             string romanValue = rcon.convert(4000);
         }
 
+        /*------------------------------------------------------------------------------------------------
+         *         THE TEST CASES
+         *         
+         *         Convert Arabic Number to Roman Numeral
+                        Number	Numeral
+                            1	I
+                            3	III
+                            9	IX
+                           1066	MLXVI
+                           1989	MCMLXXXIX
+         *------------------------------------------------------------------------------------------------*/
+
+        [TestMethod]
+        public void TestReturnIWhenpassed1()
+        {
+            string romanValue = rcon.convert(1);
+            Assert.AreEqual("I", romanValue, String.Format("Expected: I \n Returned: {0}", romanValue));
+        }
+
+        [TestMethod]
+        public void TestReturnIIIWhenpassed3()
+        {
+            string romanValue = rcon.convert(3);
+            Assert.AreEqual("III", romanValue, String.Format("Expected: III \n Returned: {0}", romanValue));
+        }
 
     }
 }
