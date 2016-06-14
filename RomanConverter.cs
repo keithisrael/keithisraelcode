@@ -8,7 +8,7 @@ namespace RomanConverter
 {
     public class RomanConverter
     {
-        Dictionary<int, string> romanTable = null;
+        Dictionary<int, string> romanTable;
 
         public RomanConverter()
         {
@@ -34,19 +34,84 @@ namespace RomanConverter
             catch (Exception ex)
             {
                 String romanValue = String.Empty;
-                int divNo = 0, i = 0;
-                foreach (var keyValue in romanTable)
+                int itNo = 0, result = inputNumber - itNo;
+
+
+                while (result != 0)
                 {
-                    if ((inputNumber / keyValue.Key) > 0)
-                        divNo = keyValue.Key;
+                    itNo = iterateRomanTable(result);
+                    romanValue += romanTable[itNo];
+                    result = inputNumber - itNo;
+                    inputNumber = result;
                 }
-                while (i < inputNumber)
-                {
-                    romanValue += romanTable[divNo];
-                    i++;
-                }
-                return romanValue;
+                return inputRules(romanValue);
             }
+        }
+
+        int iterateRomanTable(int no)
+        {
+            int divNo = 0;
+            foreach (var keyValue in romanTable)
+            {
+                if (no >= keyValue.Key)
+                    return keyValue.Key;
+            }
+            return divNo;
+        }
+
+        string inputRules(string romanValue)
+        {
+            char[] tmp = romanValue.ToCharArray();
+            int charLen = romanValue.Length;
+            string newStr = string.Empty;
+
+            while (charLen != 0)
+            {
+                string n = checkSequence(tmp, romanValue.Length - charLen, romanValue);
+                if (!n.Equals(newStr))
+                    newStr += n;
+                charLen--;
+            }
+
+            return newStr;
+        }
+
+        string checkSequence(char[] tempStr, int currentIndex, string oldRomanValue)
+        {
+            string newStr = string.Empty;
+
+            for (int i = currentIndex; i < oldRomanValue.Length; i++)
+            {
+                try
+                {
+
+                    if (oldRomanValue.Length == 3)
+                        return oldRomanValue;
+                    else if (tempStr[i] == tempStr[i + 1] && tempStr[i] == tempStr[i + 2] &&
+                        tempStr[i] == tempStr[i + 3])
+                    {
+                        switch (tempStr[i])
+                        {
+                            case 'I':
+                                newStr = "IX";
+                                break;
+                            case 'V':
+                                break;
+                            case 'X':
+                                break;
+                            case 'C':
+                                break;
+                            case 'D':
+                                break;
+                        }
+                        break;
+                    }
+                }
+                catch (Exception ex)
+                { }
+            }
+
+            return newStr;
         }
     }
 }
