@@ -64,5 +64,27 @@ namespace RomanConverter.Test
             Assert.AreEqual("M", romanValue, String.Format("Expected: M \n Returned: {0}", romanValue));
         }
 
+        /**********************************************************************************************
+         
+            ADDITIONAL FAIL-SAFE TESTS
+         
+         **********************************************************************************************/
+
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TestThrowExceptionWhenpassedNumberLessThan1()
+        {
+            string romanValue = rcon.convert(0);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentException))]
+        public void TestThrowExceptionWhenpassedNumberGreaterThan3999()
+        {
+            string romanValue = rcon.convert(4000);
+        }
+
+
     }
 }
