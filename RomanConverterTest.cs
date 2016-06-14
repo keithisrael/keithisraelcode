@@ -110,5 +110,13 @@ namespace RomanConverter.Test
             string romanValue = rcon.convert(9);
             Assert.AreEqual("IX", romanValue, String.Format("Expected: IX \n Returned: {0}", romanValue));
         }
+
+        [TestMethod]
+        public void TestReturnMLXVIWhenpassed1066()
+        {
+            string romanValue = rcon.convert(1066);
+            Assert.AreEqual("MLXVI", romanValue, String.Format("Expected: MLXVI \n Returned: {0}", romanValue));
+        }
+
     }
 }

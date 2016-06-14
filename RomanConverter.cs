@@ -63,16 +63,15 @@ namespace RomanConverter
         {
             char[] tmp = romanValue.ToCharArray();
             int charLen = romanValue.Length;
-            string newStr = string.Empty;
+            string newStr = string.Empty, tempStr = romanValue;
 
             while (charLen != 0)
             {
                 string n = checkSequence(tmp, romanValue.Length - charLen, romanValue);
-                if (!n.Equals(newStr))
-                    newStr += n;
+                if (!n.Equals(newStr) && !n.Equals(string.Empty))
+                    newStr = n;
                 charLen--;
-            }
-
+            } 
             return newStr;
         }
 
@@ -104,8 +103,9 @@ namespace RomanConverter
                             case 'D':
                                 break;
                         }
-                        break;
                     }
+                    else
+                        return oldRomanValue;
                 }
                 catch (Exception ex)
                 { }
