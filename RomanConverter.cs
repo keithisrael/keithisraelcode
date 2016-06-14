@@ -68,50 +68,62 @@ namespace RomanConverter
             while (charLen != 0)
             {
                 string n = checkSequence(tmp, romanValue.Length - charLen, romanValue);
-                if (!n.Equals(newStr) && !n.Equals(string.Empty))
-                    newStr = n;
+                if (!n.Equals(newStr) && !n.Equals(romanValue))
+                {
+                    string oldValue = romanValue.Substring((romanValue.Length - charLen) - 1, 5);
+                    tempStr = tempStr.Replace(oldValue, n);
+                }
+                else if (!n.Equals(newStr))
+                    newStr += n;
                 charLen--;
-            } 
-            return newStr;
+            }
+
+            return tempStr;
         }
 
         string checkSequence(char[] tempStr, int currentIndex, string oldRomanValue)
         {
             string newStr = string.Empty;
-
-            for (int i = currentIndex; i < oldRomanValue.Length; i++)
+            int i = currentIndex;
+            try
             {
-                try
+
+                if (oldRomanValue.Length == 3)
+                    return oldRomanValue;
+                else if (tempStr[i] == tempStr[i + 1] && tempStr[i] == tempStr[i + 2] &&
+                    tempStr[i] == tempStr[i + 3])
                 {
-
-                    if (oldRomanValue.Length == 3)
-                        return oldRomanValue;
-                    else if (tempStr[i] == tempStr[i + 1] && tempStr[i] == tempStr[i + 2] &&
-                        tempStr[i] == tempStr[i + 3])
+                    switch (tempStr[i])
                     {
-                        switch (tempStr[i])
-                        {
-                            case 'I':
-                                newStr = "IX";
-                                break;
-                            case 'V':
-                                break;
-                            case 'X':
-                                break;
-                            case 'C':
-                                break;
-                            case 'D':
-                                break;
-                        }
-                    }
-                    else
-                        return oldRomanValue;
-                }
-                catch (Exception ex)
-                { }
-            }
+                        case 'I':
+                            return newStr = "IX";
+                        case 'V':
+                        case 'X':
+                        case 'C':
+                        case 'D':
+                        default:
+                            List<int> keys = romanTable.Keys.ToList();
+                            List<string> values = romanTable.Values.ToList();
+                            newStr += tempStr[i];
 
-            return newStr;
+                            string c = (tempStr[i - 1]).ToString();
+                            int j = 0;
+                            foreach (var val in romanTable.Values.ToList())
+                            {
+                                if (j != 0 && val.Equals(c))
+                                {
+                                    int key = keys.ElementAt(j - 1);
+                                    newStr += romanTable[key];
+                                }
+                                j++;
+                            }
+                            return newStr;
+                    }
+                }
+            }
+            catch (Exception ex)
+            { }
+            return oldRomanValue;
         }
     }
 }
