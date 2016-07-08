@@ -1,3 +1,24 @@
+/************************************************************************************************************************************************************
+*										This is a C program solution to a Design Data Co. problem:												*
+*																																							*
+*										write a C program to parse a character string and convert it into a decimal value.									*
+*																																							*
+*										Expected outcome:																									*
+*																																							*
+*										"10 1/2"   should output 10.5																						*
+*										"10 1/16"  should output 10.0625																					*
+*										"3/4"      should output .75*																						*
+*																																							*
+*																													Author:  	Keith Israel				*
+*																													Location:	Des Moines, IA				*
+*																													Date:  		7/8/2016					*
+*																																							*
+*																													ALL RIGHTS RESERVED.					*
+*************************************************************************************************************************************************************/
+
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -69,6 +90,13 @@ int main(int argC, char *argV[]) {
                     
                     fraction = top / (float)bottom;
                     arr[count] = (float*)malloc(sizeof(float));
+                    
+                    if(!arr[count])
+                    {
+                        printf("Out of memory.Failed to allocate pointer.");
+                        return 0;
+                    }
+                    
                     *arr[count] = fraction;
                     //printf("%f", *arr[count]);//fraction);
                     count++;
@@ -83,6 +111,13 @@ int main(int argC, char *argV[]) {
             {
                 decValue = atoi(*(tokens + i));
                 arr[count] = (float*)malloc(sizeof(float));
+                 
+                if(!arr[count])
+                {
+                    printf("Out of memory.Failed to allocate pointer.");
+                    return 0;
+                }
+                
                 *arr[count] = ((float)decValue);  
                 //printf("%f\n", *arr[count]);//decValue);         
                 count++;     
@@ -102,6 +137,7 @@ int main(int argC, char *argV[]) {
         free(tokens);
     }
     /* Free memory and exit. */
+    free(arr);
     free (value);
     return 0;
 }
